@@ -72,15 +72,15 @@ summary(model1)
 summary(model2)
 summary(model3)
 anova(model1,model2,model3)
-shapiro.test(resid(model3))
-mean(resid(model3))
+shapiro.test(resid(model2))
+mean(resid(model2))
 
-res<-resid(model3)
-round(sum(resid(model3)),5)
-vif(model3)
+res<-resid(model2)
+round(sum(resid(model2)),5)
+vif(model2)
 
 #produce residual vs. fitted plot
-plot(fitted(model3), res)
+plot(fitted(model2), res)
 
 #add a horizontal line at 0 
 abline(0,0)
