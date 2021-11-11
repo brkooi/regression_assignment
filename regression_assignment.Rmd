@@ -1,0 +1,99 @@
+---
+title: "Analysis Motor Trend"
+author: "Ben Kooi"
+date: "11-11-2021"
+output: html_document
+---
+## Synopsis
+
+
+## Configuring the environment for the analysis
+
+Het laden van de R-packages en het defineren van variabelen.
+
+```{r message=FALSE}
+#laden van packages
+packages <- c("dplyr","corrplot","ggplot2","tidyverse","stats","modelr","zoo","tsibble","car", "EnvStats")
+sapply(packages, require, character.only=TRUE, quietly=TRUE)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Read and clean the dataset 
+
+In this section the dataset 'mtcars' is read from de library 'datasets'. 
+The dataset is a dataframe with 32 different cars with 11 variables:   
+*	mpg	 = Miles/(US) gallon;  
+*	cyl	 = Number of cylinders;  
+* disp =	Displacement (cu.in.);  
+* hp   = Gross horsepower;  
+* drat =	Rear axle ratio;  
+* wt   =	Weight (1000 lbs);  
+* qsec =	1/4 mile time;  
+* vs	 = Engine (0 = V-shaped, 1 = straight);  
+* am	 = Transmission (0 = automatic, 1 = manual);  
+* gear = Number of forward gears;  
+* carb = Number of carburetors;  
+
+```{r prepare_data}
+# read the mtcars-dataset
+library(datasets)
+data(mtcars)
+
+# summary and structure of the cars-dataset
+summary(mtcars)
+str(mtcars)
+```
+The dataset seems to be clean and there are no NA's or NaN's.
+
+## Analizing the dataset
+
+First we make a density plot for the depending variable mpg to see if this variable is normal distributed.
+
+```{r distribution, echo=FALSE}
+plot(density(mpg))
+```
+``` {r correlation}
+cm<-cor(mtcars[1:10])
+corrplot(cm, order = "AOE",method = "circle",addCoef.col = "gray" , insig = "p-value", title = "vTitleCmPlot")
+```
+
+## Modeling the dataset
+
+# create multiple linear model
+``` {r modelling}
+model1 <- lm(mpg ~ wt, data=mtcars)
+model2 <- lm(mpg ~ wt + cyl, data=mtcars)
+model3 <- lm(mpg ~ wt + cyl + disp, data=mtcars)
+          
+summary(model1)
+summary(model2)
+summary(model3)
+anova(model1,model2,model3)
+shapiro.test(resid(model1))
+mean(resid(model1))
+
+res<-resid(model1)
+round(sum(resid(model1)),5)
+vif(model1)
+
+#produce residual vs. fitted plot
+plot(fitted(model1), res)
+
+#add a horizontal line at 0 
+abline(0,0)
+
+#create Q-Q plot for residuals
+qqnorm(res)
+
+#add a straight diagonal line to the plot
+qqline(res)
+
+#Create density plot of residuals
+plot(density(res))
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
