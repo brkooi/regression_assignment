@@ -9,15 +9,12 @@ output: html_document
 
 ## Configuring the environment for the analysis
 
-Het laden van de R-packages en het defineren van variabelen.
+Loading R-packages and configuring the environment..
 
 ```{r message=FALSE}
 #laden van packages
 packages <- c("dplyr","corrplot","ggplot2","tidyverse","stats","modelr","zoo","tsibble","car", "EnvStats")
 sapply(packages, require, character.only=TRUE, quietly=TRUE)
-```
-
-```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -54,33 +51,48 @@ First we make a density plot for the depending variable mpg to see if this varia
 
 ```{r distribution, echo=FALSE}
 plot(density(mtcars$mpg))
+shapiro.test(mtcars$mpg)
 ```
-``` {r correlation}
-cm<-cor(mtcars[1:10])
-corrplot(cm, order = "AOE",method = "circle",addCoef.col = "gray" , insig = "p-value", title = "vTitleCmPlot")
-```
+The density-plot of mpg shows a distribution that seems normal, but not perfectly normal.
+The shapiro-test confirms this with pvalue=0.1229 which is greater 0.05, but not extremely greater.
+From this point of view we can use standard lineair regression for modelling the dependent variable mpg.
 
 ## Modeling the dataset
 
+First we make generate a correlation-matrix of all variables in the dataset.
+
+``` {r correlation}
+cm<-cor(mtcars)
+corrplot(cm, order = "AOE",method = "circle",addCoef.col = "gray" , insig = "p-value", title = "vTitleCmPlot")
+```
+Inspecting the correlation-matrix tells:
+* a significant positive correlation of transmission (am) and miles per gallon (mpg). Overall a car with manual transmission gives you more miles per gallon;  
+* weight (wt) has the strongest correlation with miles per gallon. The more a car weighs, the less miles per gallon.
+* transmission (am) is negative correlated with weight (wt). Overall car with manual transmission weighs less than 
+* there seems to be a lot of multicollinearity. 
+
+
+
 # create multiple linear model
 ``` {r modelling}
+mtcars$am <- as.factor(mtcars$am)
 model1 <- lm(mpg ~ am, data=mtcars)
 model2 <- lm(mpg ~ am + wt, data=mtcars)
-model3 <- lm(mpg ~ am + wt + hp, data=mtcars)
+model3 <- lm(mpg ~ wt + am + (wt * hp), data=mtcars)
+model4 <- lm(mpg ~ ., data=mtcars)
           
 summary(model1)
 summary(model2)
 summary(model3)
 anova(model1,model2,model3)
-shapiro.test(resid(model2))
-mean(resid(model2))
-
-res<-resid(model2)
-round(sum(resid(model2)),5)
-vif(model2)
+shapiro.test(resid(model3))
+mean(resid(model3))
+res<-resid(model3)
+round(sum(resid(model3)),5)
+vif(model3)
 
 #produce residual vs. fitted plot
-plot(fitted(model2), res)
+plot(fitted(model3), res)
 
 #add a horizontal line at 0 
 abline(0,0)
