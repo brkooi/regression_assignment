@@ -2,97 +2,139 @@
 title: "Analysis Motor Trend"
 author: "Ben Kooi"
 date: "11-11-2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
-## Synopsis
+# Synopsis
 
+This report describes the analysis of the reach (miles per gallon) of 32 different type of cars. The dataset that is used is the mtcars-dataset from the library 'datasets'.
+The dataset seems to be clean and there are no NA's or NaN's. Imputation is not needed.
+The variables am (transmission) and vs (engine-type) are categorical, so these will be transformed as factors.
 
-## Configuring the environment for the analysis
+Questions that will be answered in this analysis are:
+1. Is an automatic or manual transmission better for MPG?
+2. Quantify the MPG difference between automatic and manual transmissions?
+
+De most important conclusions are:
+1. In average, cars with automatic transmission have more reach (miles per gallon) than with automatic transmission;
+2. If we model the dependent variable mpg only with the predictor variable am (mpg ~ am), automatic transmission has a advantage of 7.245 miles per gallon with a standard error of 1.764 miles per gallon versus manual transmission;
+
+The steps taken to find the best model with at least transmission as a predictor for the dependent variable mpg are:  
+1. determine a statistically significant difference in miles per gallon between automatic- and manual transmission;  
+2. calculate correlation-coefficients of all variables and plot a correlation-matrix;  
+3. determine if there is (multi)collineairity in the dataset;  
+4. fit different models with mpg (miles per gallon) as dependent variable and at least am (transmission) as predictor variable;  
+5. determine the best fitted and most simple model.  
+
+The formula mpg ~ am + wt + qsec seems to give a very useful model with 85% of the variance (R-squared) explained by the model with a p-value of 1.21e-11 in the F-statitics. Collecting ore data could improve normality.
+
+# Configuring the environment for the analysis
 
 Loading R-packages and configuring the environment..
 
-```{r message=FALSE}
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
 #laden van packages
 packages <- c("dplyr","corrplot","ggplot2","tidyverse","stats","modelr","zoo","tsibble","car", "EnvStats")
 sapply(packages, require, character.only=TRUE, quietly=TRUE)
-knitr::opts_chunk$set(echo = TRUE)
-```
 
-## Read and clean the dataset 
-
-In this section the dataset 'mtcars' is read from de library 'datasets'. 
-The dataset is a dataframe with 32 different cars with 11 variables:   
-*	mpg	 = Miles/(US) gallon;  
-*	cyl	 = Number of cylinders;  
-* disp =	Displacement (cu.in.);  
-* hp   = Gross horsepower;  
-* drat =	Rear axle ratio;  
-* wt   =	Weight (1000 lbs);  
-* qsec =	1/4 mile time;  
-* vs	 = Engine (0 = V-shaped, 1 = straight);  
-* am	 = Transmission (0 = automatic, 1 = manual);  
-* gear = Number of forward gears;  
-* carb = Number of carburetors;  
-
-```{r prepare_data}
 # read the mtcars-dataset
 library(datasets)
 data(mtcars)
 
-# summary and structure of the cars-dataset
-summary(mtcars)
-str(mtcars)
+# check mtcars for Na
+nas <- sum(is.na(mtcars))
+
+# Transform variable am to factor and rename the levels
+mtcars$am<-as.factor(mtcars$am)
+levels(mtcars$am) <- c("manual","automatic")
+
+# Transform variable am to factor and rename the levels
+mtcars$vs<-as.factor(mtcars$vs)
+levels(mtcars$vs) <- c("v-shaped","straight")
+
 ```
-The dataset seems to be clean and there are no NA's or NaN's.
 
-## Analizing the dataset
-
-First we make a density plot for the depending variable mpg to see if this variable is normal distributed.
-
-```{r distribution, echo=FALSE}
-plot(density(mtcars$mpg))
-shapiro.test(mtcars$mpg)
-```
-The density-plot of mpg shows a distribution that seems normal, but not perfectly normal.
-The shapiro-test confirms this with pvalue=0.1229 which is greater 0.05, but not extremely greater.
-From this point of view we can use standard lineair regression for modelling the dependent variable mpg.
-
-## Modeling the dataset
-
-First we make generate a correlation-matrix of all variables in the dataset.
+# Correlation
+First we generate a correlation-matrix of all variables in the dataset. 
 
 ``` {r correlation}
-cm<-cor(mtcars)
-corrplot(cm, order = "AOE",method = "circle",addCoef.col = "gray" , insig = "p-value", title = "vTitleCmPlot")
+# For using cor() the factors must be transformed to numeric.
+mtcars2 <- mtcars
+mtcars2$am <- as.numeric(mtcars2$am)
+mtcars2$vs <- as.numeric(mtcars2$vs)
+
+# Calculate the correlation-coefficents
+cm<-cor(mtcars2)
+
+# Plot a correlation-matrix
+corrplot(cm, order = "AOE",method = "circle",addCoef.col = "gray" , insig = "p-value")
 ```
-Inspecting the correlation-matrix tells:
+
+Inspecting the correlation-matrix tells:  
 * a significant positive correlation of transmission (am) and miles per gallon (mpg). Overall a car with manual transmission gives you more miles per gallon;  
-* weight (wt) has the strongest correlation with miles per gallon. The more a car weighs, the less miles per gallon.
-* transmission (am) is negative correlated with weight (wt). Overall car with manual transmission weighs less than 
+* weight (wt) has the strongest correlation with miles per gallon. The more a car weighs, the less miles per gallon;  
+* transmission (am) is negative correlated with weight (wt). Overall a car with automatic transmission weighs less than with manual transmission;  
 * there seems to be a lot of multicollinearity. 
 
+Modeling the dependent variable with all other variables as predictors and calculate the variation inflation factors of all the predictors, confirms multicollinearity.
+``` {r collineairity}
+# model dependent mpg with all other variables as predictors
+model1 <- lm(mpg ~ ., data=mtcars)
 
+# calculate variation inflation factors
+vif(model1)
+```
 
-# create multiple linear model
+The strategy for selecting the predictors for modelling the dependent variable mpg is:  
+1. At least the variable of interest am (transmission) is selected;  
+2. The most significant correlation-coefficient with is selected, which is wt (weight);  
+3. The correlation-coefficient with no or less collinearity with am and wt is selected, which is qsec (1/4 mile time).  
+
+# Linear modelling MPG
+
+For selecting the best model, four different models are created by adding one predictor at the time. Then the ANOVA-test is used to compare the models.
+
 ``` {r modelling}
-mtcars$am <- as.factor(mtcars$am)
-model1 <- lm(mpg ~ am, data=mtcars)
-model2 <- lm(mpg ~ am + wt, data=mtcars)
-model3 <- lm(mpg ~ wt + am + (wt * hp), data=mtcars)
-model4 <- lm(mpg ~ ., data=mtcars)
-          
-summary(model1)
-summary(model2)
-summary(model3)
-anova(model1,model2,model3)
-shapiro.test(resid(model3))
-mean(resid(model3))
-res<-resid(model3)
-round(sum(resid(model3)),5)
-vif(model3)
+# create different models by adding one variable at the time
+model2 <- lm(mpg ~ am, data=mtcars)
+model3 <- lm(mpg ~ am + wt, data=mtcars)
+model4 <- lm(mpg ~ am + wt + qsec, data=mtcars)
+model5 <- lm(mpg ~ am + wt + qsec + disp, data=mtcars)
+
+# determine coefficient and standard error for transmission 
+summary(model2)$coeff[2]
+summary(model2)$coeff[2,2]
+
+# compare the performance of the models
+anova(model2,model3,model4,model5)
+```
+
+The best model seems to be model4. Adding more variables to model4 will not improve the model. This is checked by model5.
+
+``` {r bestmodel}
+# calculate variation inflation factors of model4
+vif(model4)
+
+# summary of the model
+summary(model4)
+
+# collect the residuals form the model
+res<-resid(model4)
+
+par( mfrow = c(2,2) )
+
+# Plot a boxplot of mpg vs am
+boxplot(mpg ~ am, mtcars, main="Transmission vs Miles per gallon",
+   xlab="Transmission", ylab="Miles Per Gallon")
+
+# plot leverage values for each observation for checking outliers
+plot(hatvalues(model4), type = 'h', main="Leverage", xlab="Cars", ylab="Hatvalues")
 
 #produce residual vs. fitted plot
-plot(fitted(model3), res)
+plot(fitted(model4), res, main="Fitted vs residuals", xlab="Fitted", ylab="Residuals")
 
 #add a horizontal line at 0 
 abline(0,0)
@@ -103,9 +145,12 @@ qqnorm(res)
 #add a straight diagonal line to the plot
 qqline(res)
 
-#Create density plot of residuals
-plot(density(res))
+# test if the model is a normal distribution
+shapiro.test(res)
 ```
 
+Checking the variation inflation factors tells us that there is no multicollinearity in this model. The summary of the model says that 85% of the variance is explained by the model with a p-value much less than 0.05. There are no hatvalues with a value>2, so there are no outliers with a big influence on the regression-line. The plot of the residuals versus the fitted model shows no pattern which is a good sign. The QQ-plot shows imperfection in normality of the distribution. The shapiro-test of the mode confirms this with p-value of 0.08, which is just a bit greater than 0.05.
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Overall the model seems to be useful, but collecting more data could improve normality.
+
+
