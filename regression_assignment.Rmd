@@ -12,13 +12,13 @@ This report describes the analysis of the reach (miles per gallon) of 32 differe
 The dataset seems to be clean and there are no NA's or NaN's. Imputation is not needed.
 The variables am (transmission) and vs (engine-type) are categorical, so these will be transformed as factors.
 
-Questions that will be answered in this analysis are:
-1. Is an automatic or manual transmission better for MPG?
-2. Quantify the MPG difference between automatic and manual transmissions?
+Questions that will be answered in this analysis are:  
+1. Is an automatic or manual transmission better for MPG?  
+2. Quantify the MPG difference between automatic and manual transmissions?  
 
-De most important conclusions are:
-1. In average, cars with automatic transmission have more reach (miles per gallon) than with automatic transmission;
-2. If we model the dependent variable mpg only with the predictor variable am (mpg ~ am), automatic transmission has a advantage of 7.245 miles per gallon with a standard error of 1.764 miles per gallon versus manual transmission;
+De most important conclusions are:  
+1. In average, cars with automatic transmission have more reach (miles per gallon) than with automatic transmission;  
+2. If we model the dependent variable mpg only with the predictor variable am (mpg ~ am), manual transmission has a advantage of 7.245 miles per gallon with a standard error of 1.764 miles per gallon versus automatic transmission.  
 
 The steps taken to find the best model with at least transmission as a predictor for the dependent variable mpg are:  
 1. determine a statistically significant difference in miles per gallon between automatic- and manual transmission;  
@@ -49,7 +49,7 @@ nas <- sum(is.na(mtcars))
 
 # Transform variable am to factor and rename the levels
 mtcars$am<-as.factor(mtcars$am)
-levels(mtcars$am) <- c("manual","automatic")
+levels(mtcars$am) <- c("automatic","manual")
 
 # Transform variable am to factor and rename the levels
 mtcars$vs<-as.factor(mtcars$vs)
