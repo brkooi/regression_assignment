@@ -17,7 +17,7 @@ Questions that will be answered in this analysis are:
 2. Quantify the MPG difference between automatic and manual transmissions?  
 
 De most important conclusions are:  
-1. In average, cars with automatic transmission have more reach (miles per gallon) than with automatic transmission;  
+1. In average, cars with manual transmission have more reach (miles per gallon) than with automatic transmission;  
 2. If we model the dependent variable mpg only with the predictor variable am (mpg ~ am), manual transmission has a advantage of 7.245 miles per gallon with a standard error of 1.764 miles per gallon versus automatic transmission.  
 
 The steps taken to find the best model with at least transmission as a predictor for the dependent variable mpg are:  
